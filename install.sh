@@ -46,7 +46,17 @@ pkg_install() {
                 info "Installing Homebrew..."
                 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
             fi
-            brew install "${packages[@]}"
+            local to_install=()
+            for pkg in "${packages[@]}"; do
+                if ! brew list "$pkg" &>/dev/null; then
+                    to_install+=("$pkg")
+                else
+                    info "$pkg already installed"
+                fi
+            done
+            if [[ ${#to_install[@]} -gt 0 ]]; then
+                brew install "${to_install[@]}"
+            fi
             ;;
         debian)
             sudo apt-get update -qq
@@ -80,7 +90,11 @@ if ! command -v ghostty &>/dev/null; then
     info "Installing Ghostty..."
     case "$OS" in
         macos)
-            brew install --cask ghostty
+            if brew list --cask ghostty &>/dev/null; then
+                info "Ghostty already installed"
+            else
+                brew install --cask ghostty
+            fi
             ;;
         debian)
             /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)" > /dev/null 2>&1
@@ -119,7 +133,12 @@ install_nerd_font() {
     mkdir -p "$font_dir"
     local tmp_dir
     tmp_dir=$(mktemp -d)
-    curl -fsSL "$font_url" -o "$tmp_dir/font.zip"
+    local curl_opts=(-fsSL)
+    if [[ "$OS" == "macos" ]] && command -v brew &>/dev/null; then
+        local ca_bundle="$(brew --prefix)/etc/ca-certificates/cert.pem"
+        [[ -f "$ca_bundle" ]] && curl_opts+=(--cacert "$ca_bundle")
+    fi
+    curl "${curl_opts[@]}" "$font_url" -o "$tmp_dir/font.zip"
     unzip -qo "$tmp_dir/font.zip" -d "$tmp_dir/font"
     cp "$tmp_dir"/font/*.ttf "$font_dir/" 2>/dev/null || true
     rm -rf "$tmp_dir"
@@ -132,33 +151,12 @@ install_nerd_font() {
 }
 install_nerd_font
 
-# ── Install Oh My Zsh ──
-if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-    info "Installing Oh My Zsh..."
-    RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" > /dev/null 2>&1
-    ok "Oh My Zsh installed"
-else
-    ok "Oh My Zsh already installed"
-fi
-
-# ── Install Powerlevel10k ──
-P10K_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
-if [[ ! -d "$P10K_DIR" ]]; then
-    info "Installing Powerlevel10k..."
-    git clone -q --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_DIR"
-    ok "Powerlevel10k installed"
-else
-    ok "Powerlevel10k already installed"
-fi
-
-# ── Install Oh My Zsh plugins ──
-ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
-
-install_omz_plugin() {
+# ── Install zsh plugins ──
+install_zsh_plugin() {
     local name="$1" repo="$2"
-    local dest="$ZSH_CUSTOM/plugins/$name"
+    local dest="$HOME/.zsh/$name"
     if [[ -d "$dest" ]]; then
-        ok "$name already installed"
+        info "$name already installed"
     else
         info "Installing $name..."
         git clone -q "$repo" "$dest"
@@ -166,9 +164,9 @@ install_omz_plugin() {
     fi
 }
 
-install_omz_plugin "zsh-autosuggestions"     "https://github.com/zsh-users/zsh-autosuggestions.git"
-install_omz_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting.git"
-install_omz_plugin "zsh-completions"         "https://github.com/zsh-users/zsh-completions.git"
+install_zsh_plugin "zsh-autosuggestions"     "https://github.com/zsh-users/zsh-autosuggestions.git"
+install_zsh_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting.git"
+install_zsh_plugin "zsh-completions"         "https://github.com/zsh-users/zsh-completions.git"
 
 # ── Install CLI tools not available via package manager ──
 # eza (on older distros or RHEL that don't have it)
@@ -206,17 +204,15 @@ symlink() {
         info "Backed up existing $dst"
     fi
     ln -sf "$src" "$dst"
+    if [[ ! -e "$dst" ]]; then
+        err "Symlink broken: $dst -> $src"
+    fi
 }
 
 symlink "$DOTFILES_DIR/zsh/.zshrc"                "$HOME/.zshrc"
 symlink "$DOTFILES_DIR/tmux/tmux.conf"             "$HOME/.tmux.conf"
 symlink "$DOTFILES_DIR/alacritty/alacritty.toml"   "$HOME/.config/alacritty/alacritty.toml"
 symlink "$DOTFILES_DIR/ghostty/config"             "$HOME/.config/ghostty/config"
-
-# Symlink p10k config if it exists in dotfiles
-if [[ -f "$DOTFILES_DIR/zsh/.p10k.zsh" ]]; then
-    symlink "$DOTFILES_DIR/zsh/.p10k.zsh" "$HOME/.p10k.zsh"
-fi
 
 ok "Configs symlinked"
 
@@ -246,8 +242,6 @@ echo -e "${GREEN}${BOLD}Setup complete!${NC}"
 echo ""
 echo "  Next steps:"
 echo "  1. Open a new terminal (or run: exec zsh)"
-echo "  2. Powerlevel10k config wizard will run on first launch"
-echo "     (run 'p10k configure' anytime to reconfigure)"
-echo "  3. Set your terminal font to 'JetBrainsMono Nerd Font'"
-echo "  4. For local overrides, create ~/.zshrc.local"
+echo "  2. Set your terminal font to 'JetBrainsMono Nerd Font'"
+echo "  3. For local overrides, create ~/.zshrc.local"
 echo ""

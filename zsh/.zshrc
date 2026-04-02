@@ -1,49 +1,56 @@
 # ── Dotfiles .zshrc ──────────────────────────────────────────────
 
-# ── Powerlevel10k instant prompt (must be at top) ──
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-    source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-# ── Oh My Zsh ──
-export ZSH="$HOME/.oh-my-zsh"
-ZSH_THEME="powerlevel10k/powerlevel10k"
-
-# Plugins (managed by oh-my-zsh)
-plugins=(
-    git
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    zsh-completions
-    docker
-    kubectl
-    fzf
-    z
-)
-
-# Autosuggestion strategy
-ZSH_AUTOSUGGEST_STRATEGY=(history completion)
-
-source "$ZSH/oh-my-zsh.sh"
+# ── Prompt ──
+PROMPT='%F{blue}%~%f %F{green}$%f '
 
 # ── History ──
+HISTFILE=~/.zsh_history
 HISTSIZE=50000
 SAVEHIST=50000
 setopt HIST_IGNORE_ALL_DUPS
 setopt HIST_SAVE_NO_DUPS
 setopt HIST_REDUCE_BLANKS
+setopt SHARE_HISTORY
+
+# ── Completion ──
+autoload -Uz compinit && compinit
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
+zstyle ':completion:*' menu select
 
 # ── Path ──
 typeset -U path
 path=(~/.local/bin $path)
 
+# ── Plugins ──
+_source_if_exists() { [[ -f "$1" ]] && source "$1"; }
+
+_source_if_exists ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+_source_if_exists ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+_source_if_exists ~/.zsh/zsh-completions/src
+
+# Add zsh-completions to fpath
+[[ -d ~/.zsh/zsh-completions/src ]] && fpath=(~/.zsh/zsh-completions/src $fpath)
+
+# Autosuggestion config
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+
+# Tab: accept autosuggestion if visible, otherwise do normal completion
+_accept_or_complete() {
+    if [[ -n "$POSTDISPLAY" ]]; then
+        zle autosuggest-accept
+    else
+        zle expand-or-complete
+    fi
+}
+zle -N _accept_or_complete
+bindkey '\t' _accept_or_complete
+
 # ── Aliases ──
-# Use modern replacements if available
 if command -v eza &>/dev/null; then
-    alias ls='eza --icons'
-    alias ll='eza -lah --icons --git'
-    alias la='eza -a --icons'
-    alias tree='eza --tree --icons'
+    alias ls='eza'
+    alias ll='eza -lah --git'
+    alias la='eza -a'
+    alias tree='eza --tree'
 else
     alias ls='ls --color=auto 2>/dev/null || ls -G'
     alias ll='ls -lah'
@@ -52,6 +59,7 @@ fi
 
 if command -v bat &>/dev/null; then
     alias cat='bat --paging=never'
+    export BAT_THEME="Catppuccin Mocha"
 fi
 
 if command -v zoxide &>/dev/null; then
@@ -71,16 +79,16 @@ alias gpl='git pull'
 
 # ── fzf ──
 if command -v fzf &>/dev/null; then
-    # Use fd if available for better fzf performance
     if command -v fd &>/dev/null; then
         export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
         export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
     fi
-    export FZF_DEFAULT_OPTS='--height 40% --border --info=inline'
+    export FZF_DEFAULT_OPTS='--height 40% --border --info=inline --color=bg+:#313244,bg:#1e1e2e,spinner:#f5e0dc,hl:#f38ba8,fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc,marker:#f5e0dc,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8'
+    _source_if_exists /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+    _source_if_exists /opt/homebrew/opt/fzf/shell/completion.zsh
+    _source_if_exists /usr/share/doc/fzf/examples/key-bindings.zsh
+    _source_if_exists /usr/share/doc/fzf/examples/completion.zsh
 fi
-
-# ── Powerlevel10k config ──
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # ── Local overrides (not tracked) ──
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
