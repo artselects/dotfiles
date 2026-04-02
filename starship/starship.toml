@@ -1,0 +1,68 @@
+# Starship prompt config
+# Docs: https://starship.rs/config/
+
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_status\
+$python\
+$nodejs\
+$rust\
+$golang\
+$docker_context\
+$aws\
+$cmd_duration\
+$line_break\
+$character"""
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+
+[directory]
+truncation_length = 4
+truncate_to_repo = true
+style = "bold cyan"
+
+[git_branch]
+format = "[$symbol$branch(:$remote_branch)]($style) "
+style = "bold purple"
+
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+style = "bold red"
+
+[cmd_duration]
+min_time = 2_000
+format = "[$duration]($style) "
+style = "bold yellow"
+
+[python]
+format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
+
+[nodejs]
+format = "[$symbol($version )]($style)"
+
+[rust]
+format = "[$symbol($version )]($style)"
+
+[golang]
+format = "[$symbol($version )]($style)"
+
+[aws]
+format = '[$symbol($profile )(\($region\) )]($style)'
+style = "bold orange"
+
+[docker_context]
+format = "[$symbol$context]($style) "
+
+[hostname]
+ssh_only = true
+format = "[$ssh_symbol$hostname]($style):"
+style = "bold dimmed green"
+
+[username]
+show_always = false
+format = "[$user]($style)@"
