@@ -81,7 +81,7 @@ info "Installing core packages..."
 case "$OS" in
     macos) pkg_install zsh tmux curl git fzf bat eza fd zoxide ;;
     debian) pkg_install zsh tmux curl git unzip fontconfig fzf bat eza fd-find zoxide ;;
-    rhel) pkg_install zsh tmux curl git unzip fontconfig fzf ;;
+    rhel) pkg_install zsh tmux curl git unzip fontconfig ;;
 esac
 ok "Core packages installed"
 
@@ -169,6 +169,14 @@ install_zsh_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-s
 install_zsh_plugin "zsh-completions"         "https://github.com/zsh-users/zsh-completions.git"
 
 # ── Install CLI tools not available via package manager ──
+# fzf
+if ! command -v fzf &>/dev/null; then
+    info "Installing fzf..."
+    git clone -q --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+    ~/.fzf/install --key-bindings --completion --no-update-rc --no-bash --no-fish >/dev/null 2>&1
+    ok "fzf installed"
+fi
+
 # eza (on older distros or RHEL that don't have it)
 if ! command -v eza &>/dev/null; then
     info "Installing eza..."
@@ -194,10 +202,10 @@ if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
 fi
 
 # ── Migrate custom content from existing .zshrc to .zshrc.local ──
-if [[ -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" && ! -f "$HOME/.zshrc.local" ]]; then
+migrate_zshrc() {
+    [[ -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" && ! -f "$HOME/.zshrc.local" ]] || return 0
     info "Migrating custom settings from existing .zshrc to .zshrc.local..."
 
-    # Patterns that conflict with our setup
     local conflicts=()
     grep -qi 'oh-my-zsh\|ohmyzsh' "$HOME/.zshrc" && conflicts+=("Oh My Zsh (replaced by direct plugin loading)")
     grep -qi 'p10k\|powerlevel' "$HOME/.zshrc" && conflicts+=("Powerlevel10k (replaced by simple prompt)")
@@ -220,7 +228,6 @@ if [[ -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" && ! -f "$HOME/.zshrc.local" ]]; 
         read -r review_after
     fi
 
-    # Extract custom lines, excluding conflicts
     grep -E '^(export |eval |source |\. |path=|PATH=)' "$HOME/.zshrc" \
         | grep -iv 'oh-my-zsh\|ZSH_THEME\|ZSH=\|p10k\|powerlevel\|starship\|compinit' \
         > "$HOME/.zshrc.local" 2>/dev/null || true
@@ -243,6 +250,8 @@ if [[ -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" && ! -f "$HOME/.zshrc.local" ]]; 
     else
         rm -f "$HOME/.zshrc.local"
     fi
+}
+migrate_zshrc
 fi
 
 # ── Symlink configs ──
