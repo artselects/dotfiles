@@ -196,11 +196,50 @@ fi
 # ── Migrate custom content from existing .zshrc to .zshrc.local ──
 if [[ -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" && ! -f "$HOME/.zshrc.local" ]]; then
     info "Migrating custom settings from existing .zshrc to .zshrc.local..."
+
+    # Patterns that conflict with our setup
+    local conflicts=()
+    grep -qi 'oh-my-zsh\|ohmyzsh' "$HOME/.zshrc" && conflicts+=("Oh My Zsh (replaced by direct plugin loading)")
+    grep -qi 'p10k\|powerlevel' "$HOME/.zshrc" && conflicts+=("Powerlevel10k (replaced by simple prompt)")
+    grep -qi 'ZSH_THEME=' "$HOME/.zshrc" && conflicts+=("ZSH_THEME (no theme framework used)")
+    grep -qi 'nvm\.sh\|NVM_DIR' "$HOME/.zshrc" && grep -qi 'mise' "$HOME/.zshrc" && conflicts+=("NVM + mise (both manage Node — keep only mise)")
+    grep -qi 'pyenv init' "$HOME/.zshrc" && grep -qi 'mise' "$HOME/.zshrc" && conflicts+=("pyenv + mise (both manage Python — keep only mise)")
+    grep -qi 'starship init' "$HOME/.zshrc" && conflicts+=("Starship prompt (conflicts with our PROMPT)")
+    grep -qi 'PROMPT=' "$HOME/.zshrc" && conflicts+=("Custom PROMPT (will be overridden by dotfiles)")
+    grep -qi 'compinit' "$HOME/.zshrc" && conflicts+=("compinit (already handled by dotfiles .zshrc)")
+
+    if [[ ${#conflicts[@]} -gt 0 ]]; then
+        echo ""
+        echo -e "${BOLD}Potential conflicts detected in existing .zshrc:${NC}"
+        for c in "${conflicts[@]}"; do
+            echo -e "  ${RED}•${NC} $c"
+        done
+        echo ""
+        echo "These will be excluded from ~/.zshrc.local."
+        echo -n "Review migrated file after install? [y/N] "
+        read -r review_after
+    fi
+
+    # Extract custom lines, excluding conflicts
     grep -E '^(export |eval |source |\. |path=|PATH=)' "$HOME/.zshrc" \
-        | grep -iv 'oh-my-zsh\|ZSH_THEME\|ZSH=\|p10k\|powerlevel' \
+        | grep -iv 'oh-my-zsh\|ZSH_THEME\|ZSH=\|p10k\|powerlevel\|starship\|compinit' \
         > "$HOME/.zshrc.local" 2>/dev/null || true
+
     if [[ -s "$HOME/.zshrc.local" ]]; then
         ok "Custom settings saved to ~/.zshrc.local"
+        if [[ "$review_after" =~ ^[Yy]$ ]]; then
+            echo ""
+            echo -e "${BOLD}── ~/.zshrc.local ──${NC}"
+            cat "$HOME/.zshrc.local"
+            echo -e "${BOLD}────────────────────${NC}"
+            echo ""
+            echo -n "Keep this file? [Y/n] "
+            read -r keep_file
+            if [[ "$keep_file" =~ ^[Nn]$ ]]; then
+                rm -f "$HOME/.zshrc.local"
+                info "Removed ~/.zshrc.local — create it manually if needed"
+            fi
+        fi
     else
         rm -f "$HOME/.zshrc.local"
     fi
