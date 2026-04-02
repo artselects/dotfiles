@@ -172,7 +172,9 @@ install_zsh_plugin "zsh-completions"         "https://github.com/zsh-users/zsh-c
 # fzf
 if ! command -v fzf &>/dev/null; then
     info "Installing fzf..."
-    git clone -q --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+    if [[ ! -d "$HOME/.fzf" ]]; then
+        git clone -q --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+    fi
     ~/.fzf/install --key-bindings --completion --no-update-rc --no-bash --no-fish >/dev/null 2>&1
     ok "fzf installed"
 fi
