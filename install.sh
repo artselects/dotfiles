@@ -76,6 +76,27 @@ case "$OS" in
 esac
 ok "Core packages installed"
 
+# ── Install Ghostty ──
+if ! command -v ghostty &>/dev/null; then
+    info "Installing Ghostty..."
+    case "$OS" in
+        macos)
+            brew install --cask ghostty
+            ;;
+        debian)
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/mkasberg/ghostty-ubuntu/HEAD/install.sh)" > /dev/null 2>&1
+            ;;
+        *)
+            info "Ghostty: no auto-install for $OS — see https://ghostty.org/download"
+            ;;
+    esac
+    if command -v ghostty &>/dev/null; then
+        ok "Ghostty installed"
+    fi
+else
+    ok "Ghostty already installed"
+fi
+
 # ── Install Starship ──
 if ! command -v starship &>/dev/null; then
     info "Installing Starship prompt..."
