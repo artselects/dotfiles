@@ -25,6 +25,7 @@ cd ~/dotfiles
 dotfiles/
 ├── install.sh              # One-command setup
 ├── zsh/.zshrc              # Zsh config
+├── zsh/amazon.zsh          # Amazon dev tool aliases (brazil, ada, toolbox)
 ├── tmux/tmux.conf          # Tmux config
 ├── alacritty/alacritty.toml
 ├── ghostty/config

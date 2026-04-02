@@ -1,6 +1,7 @@
 # ── Dotfiles .zshrc ──────────────────────────────────────────────
 
 # ── Prompt ──
+precmd() { printf '%s\n' "${(l:COLUMNS::-:)}" }
 PROMPT='%F{blue}%~%f %F{green}$%f '
 
 # ── History ──
@@ -89,6 +90,9 @@ if command -v fzf &>/dev/null; then
     _source_if_exists /usr/share/doc/fzf/examples/key-bindings.zsh
     _source_if_exists /usr/share/doc/fzf/examples/completion.zsh
 fi
+
+# ── Amazon dev tools (brazil, toolbox, ada) ──
+_source_if_exists "$(dirname "$(readlink -f ~/.zshrc 2>/dev/null || echo ~/.zshrc)")/amazon.zsh"
 
 # ── Local overrides (not tracked) ──
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
