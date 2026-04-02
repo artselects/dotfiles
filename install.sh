@@ -229,7 +229,7 @@ migrate_zshrc() {
     fi
 
     grep -E '^(export |eval |source |\. |path=|PATH=)' "$HOME/.zshrc" \
-        | grep -iv 'oh-my-zsh\|ZSH_THEME\|ZSH=\|p10k\|powerlevel\|starship\|compinit' \
+        | grep -iv 'oh-my-zsh\|ZSH_THEME\|ZSH=\|p10k\|powerlevel\|starship\|compinit\|PROMPT=\|RPROMPT=\|SSH_CLIENT' \
         > "$HOME/.zshrc.local" 2>/dev/null || true
 
     if [[ -s "$HOME/.zshrc.local" ]]; then
@@ -252,7 +252,6 @@ migrate_zshrc() {
     fi
 }
 migrate_zshrc
-fi
 
 # ── Symlink configs ──
 info "Symlinking config files..."
