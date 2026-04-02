@@ -193,6 +193,19 @@ if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
     ok "Created fd -> fdfind symlink"
 fi
 
+# ── Migrate custom content from existing .zshrc to .zshrc.local ──
+if [[ -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" && ! -f "$HOME/.zshrc.local" ]]; then
+    info "Migrating custom settings from existing .zshrc to .zshrc.local..."
+    grep -E '^(export |eval |source |\. |path=|PATH=)' "$HOME/.zshrc" \
+        | grep -iv 'oh-my-zsh\|ZSH_THEME\|ZSH=\|p10k\|powerlevel' \
+        > "$HOME/.zshrc.local" 2>/dev/null || true
+    if [[ -s "$HOME/.zshrc.local" ]]; then
+        ok "Custom settings saved to ~/.zshrc.local"
+    else
+        rm -f "$HOME/.zshrc.local"
+    fi
+fi
+
 # ── Symlink configs ──
 info "Symlinking config files..."
 
