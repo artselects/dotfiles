@@ -6,7 +6,6 @@ set -euo pipefail
 # Usage: git clone <repo> ~/dotfiles && cd ~/dotfiles && ./install.sh
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_DIR="$HOME/.zsh/plugins"
 
 # Colors
 RED='\033[0;31m'
@@ -67,12 +66,12 @@ pkg_install() {
     esac
 }
 
-# ── Install packages ──
+# ── Install core packages ──
 info "Installing core packages..."
 case "$OS" in
-    macos) pkg_install zsh tmux curl git ;;
-    debian) pkg_install zsh tmux curl git unzip fontconfig ;;
-    rhel) pkg_install zsh tmux curl git unzip fontconfig ;;
+    macos) pkg_install zsh tmux curl git fzf bat eza fd zoxide ;;
+    debian) pkg_install zsh tmux curl git unzip fontconfig fzf bat eza fd-find zoxide ;;
+    rhel) pkg_install zsh tmux curl git unzip fontconfig fzf ;;
 esac
 ok "Core packages installed"
 
@@ -95,15 +94,6 @@ if ! command -v ghostty &>/dev/null; then
     fi
 else
     ok "Ghostty already installed"
-fi
-
-# ── Install Starship ──
-if ! command -v starship &>/dev/null; then
-    info "Installing Starship prompt..."
-    curl -sS https://starship.rs/install.sh | sh -s -- -y > /dev/null 2>&1
-    ok "Starship installed"
-else
-    ok "Starship already installed"
 fi
 
 # ── Install JetBrainsMono Nerd Font ──
@@ -142,24 +132,68 @@ install_nerd_font() {
 }
 install_nerd_font
 
-# ── Install zsh plugins ──
-install_zsh_plugin() {
+# ── Install Oh My Zsh ──
+if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
+    info "Installing Oh My Zsh..."
+    RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" > /dev/null 2>&1
+    ok "Oh My Zsh installed"
+else
+    ok "Oh My Zsh already installed"
+fi
+
+# ── Install Powerlevel10k ──
+P10K_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
+if [[ ! -d "$P10K_DIR" ]]; then
+    info "Installing Powerlevel10k..."
+    git clone -q --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_DIR"
+    ok "Powerlevel10k installed"
+else
+    ok "Powerlevel10k already installed"
+fi
+
+# ── Install Oh My Zsh plugins ──
+ZSH_CUSTOM="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+
+install_omz_plugin() {
     local name="$1" repo="$2"
-    local dest="$PLUGIN_DIR/$name"
+    local dest="$ZSH_CUSTOM/plugins/$name"
     if [[ -d "$dest" ]]; then
-        info "Updating $name..."
-        git -C "$dest" pull -q
+        ok "$name already installed"
     else
         info "Installing $name..."
         git clone -q "$repo" "$dest"
+        ok "$name installed"
     fi
 }
 
-mkdir -p "$PLUGIN_DIR"
-install_zsh_plugin "zsh-autosuggestions"    "https://github.com/zsh-users/zsh-autosuggestions.git"
-install_zsh_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting.git"
-install_zsh_plugin "zsh-completions"         "https://github.com/zsh-users/zsh-completions.git"
-ok "Zsh plugins installed"
+install_omz_plugin "zsh-autosuggestions"     "https://github.com/zsh-users/zsh-autosuggestions.git"
+install_omz_plugin "zsh-syntax-highlighting" "https://github.com/zsh-users/zsh-syntax-highlighting.git"
+install_omz_plugin "zsh-completions"         "https://github.com/zsh-users/zsh-completions.git"
+
+# ── Install CLI tools not available via package manager ──
+# eza (on older distros or RHEL that don't have it)
+if ! command -v eza &>/dev/null; then
+    info "Installing eza..."
+    EZA_VERSION=$(curl -sS https://api.github.com/repos/eza-community/eza/releases/latest | grep tag_name | cut -d '"' -f 4)
+    if [[ -n "$EZA_VERSION" ]]; then
+        curl -fsSL "https://github.com/eza-community/eza/releases/download/${EZA_VERSION}/eza_x86_64-unknown-linux-gnu.tar.gz" | tar xz -C /tmp
+        sudo mv /tmp/eza /usr/local/bin/ 2>/dev/null && ok "eza installed" || info "Could not install eza (no sudo)"
+    fi
+fi
+
+# bat alias for Debian (packaged as batcat)
+if command -v batcat &>/dev/null && ! command -v bat &>/dev/null; then
+    mkdir -p ~/.local/bin
+    ln -sf "$(command -v batcat)" ~/.local/bin/bat
+    ok "Created bat -> batcat symlink"
+fi
+
+# fd alias for Debian (packaged as fdfind)
+if command -v fdfind &>/dev/null && ! command -v fd &>/dev/null; then
+    mkdir -p ~/.local/bin
+    ln -sf "$(command -v fdfind)" ~/.local/bin/fd
+    ok "Created fd -> fdfind symlink"
+fi
 
 # ── Symlink configs ──
 info "Symlinking config files..."
@@ -175,10 +209,14 @@ symlink() {
 }
 
 symlink "$DOTFILES_DIR/zsh/.zshrc"                "$HOME/.zshrc"
-symlink "$DOTFILES_DIR/starship/starship.toml"     "$HOME/.config/starship.toml"
 symlink "$DOTFILES_DIR/tmux/tmux.conf"             "$HOME/.tmux.conf"
 symlink "$DOTFILES_DIR/alacritty/alacritty.toml"   "$HOME/.config/alacritty/alacritty.toml"
 symlink "$DOTFILES_DIR/ghostty/config"             "$HOME/.config/ghostty/config"
+
+# Symlink p10k config if it exists in dotfiles
+if [[ -f "$DOTFILES_DIR/zsh/.p10k.zsh" ]]; then
+    symlink "$DOTFILES_DIR/zsh/.p10k.zsh" "$HOME/.p10k.zsh"
+fi
 
 ok "Configs symlinked"
 
@@ -202,6 +240,8 @@ echo -e "${GREEN}${BOLD}Setup complete!${NC}"
 echo ""
 echo "  Next steps:"
 echo "  1. Open a new terminal (or run: exec zsh)"
-echo "  2. Set your terminal font to 'JetBrainsMono Nerd Font'"
-echo "  3. For local overrides, create ~/.zshrc.local"
+echo "  2. Powerlevel10k config wizard will run on first launch"
+echo "     (run 'p10k configure' anytime to reconfigure)"
+echo "  3. Set your terminal font to 'JetBrainsMono Nerd Font'"
+echo "  4. For local overrides, create ~/.zshrc.local"
 echo ""
