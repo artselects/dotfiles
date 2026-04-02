@@ -79,7 +79,7 @@ ok "Core packages installed"
 # ── Install Starship ──
 if ! command -v starship &>/dev/null; then
     info "Installing Starship prompt..."
-    curl -sS https://starship.rs/install.sh | sh -s -- -y
+    curl -sS https://starship.rs/install.sh | sh -s -- -y > /dev/null 2>&1
     ok "Starship installed"
 else
     ok "Starship already installed"
