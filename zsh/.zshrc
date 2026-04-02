@@ -4,6 +4,9 @@
 precmd() { printf '%s\n' "${(l:COLUMNS::-:)}" }
 PROMPT='%F{blue}%~%f %F{green}$%f '
 
+# ── Early local overrides (env setup, PATH, etc.) ──
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
 # ── History ──
 HISTFILE=~/.zsh_history
 HISTSIZE=50000
@@ -14,6 +17,10 @@ setopt HIST_REDUCE_BLANKS
 setopt SHARE_HISTORY
 
 # ── Completion ──
+# Ensure system zsh functions are in fpath
+fpath=($fpath /usr/share/zsh/${ZSH_VERSION}/functions /usr/share/zsh/site-functions /usr/local/share/zsh/site-functions)
+[[ -d ~/.zsh/zsh-completions/src ]] && fpath=(~/.zsh/zsh-completions/src $fpath)
+autoload -Uz add-zsh-hook is-at-least
 autoload -Uz compinit && compinit
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 zstyle ':completion:*' menu select
@@ -27,10 +34,6 @@ _source_if_exists() { [[ -f "$1" ]] && source "$1"; }
 
 _source_if_exists ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 _source_if_exists ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-_source_if_exists ~/.zsh/zsh-completions/src
-
-# Add zsh-completions to fpath
-[[ -d ~/.zsh/zsh-completions/src ]] && fpath=(~/.zsh/zsh-completions/src $fpath)
 
 # Autosuggestion config
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
@@ -93,6 +96,3 @@ fi
 
 # ── Amazon dev tools (brazil, toolbox, ada) ──
 _source_if_exists "$(dirname "$(readlink -f ~/.zshrc 2>/dev/null || echo ~/.zshrc)")/amazon.zsh"
-
-# ── Local overrides (not tracked) ──
-[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
