@@ -37,6 +37,17 @@ detect_os() {
 OS=$(detect_os)
 info "Detected OS family: $OS"
 
+# ── Detect headless (no display / SSH session) ──
+HAS_DISPLAY=true
+if [[ "$OS" == "macos" ]]; then
+    : # macOS always has a display
+elif [[ -n "${SSH_CLIENT:-}" || -n "${SSH_TTY:-}" ]] && [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
+    HAS_DISPLAY=false
+fi
+if [[ "$HAS_DISPLAY" == "false" ]]; then
+    info "Headless environment detected — skipping GUI packages"
+fi
+
 # ── Package install helper ──
 pkg_install() {
     local packages=("$@")
@@ -85,7 +96,8 @@ case "$OS" in
 esac
 ok "Core packages installed"
 
-# ── Install Ghostty ──
+# ── Install Ghostty (GUI only) ──
+if [[ "$HAS_DISPLAY" == "true" ]]; then
 if ! command -v ghostty &>/dev/null; then
     info "Installing Ghostty..."
     case "$OS" in
@@ -109,6 +121,7 @@ if ! command -v ghostty &>/dev/null; then
 else
     ok "Ghostty already installed"
 fi
+fi # HAS_DISPLAY
 
 # ── Install JetBrainsMono Nerd Font ──
 install_nerd_font() {
@@ -149,7 +162,9 @@ install_nerd_font() {
     fi
     ok "JetBrainsMono Nerd Font installed"
 }
-install_nerd_font
+if [[ "$HAS_DISPLAY" == "true" ]]; then
+    install_nerd_font
+fi
 
 # ── Install zsh plugins ──
 install_zsh_plugin() {
@@ -273,8 +288,10 @@ symlink() {
 
 symlink "$DOTFILES_DIR/zsh/.zshrc"                "$HOME/.zshrc"
 symlink "$DOTFILES_DIR/tmux/tmux.conf"             "$HOME/.tmux.conf"
-symlink "$DOTFILES_DIR/alacritty/alacritty.toml"   "$HOME/.config/alacritty/alacritty.toml"
-symlink "$DOTFILES_DIR/ghostty/config"             "$HOME/.config/ghostty/config"
+if [[ "$HAS_DISPLAY" == "true" ]]; then
+    symlink "$DOTFILES_DIR/alacritty/alacritty.toml"   "$HOME/.config/alacritty/alacritty.toml"
+    symlink "$DOTFILES_DIR/ghostty/config"             "$HOME/.config/ghostty/config"
+fi
 
 ok "Configs symlinked"
 
@@ -292,8 +309,8 @@ else
     ok "Shell is already zsh"
 fi
 
-# ── Apply Ubuntu-specific macOS keybindings ──
-if [[ "$OS" == "debian" ]]; then
+# ── Apply Ubuntu-specific macOS keybindings (GUI only) ──
+if [[ "$OS" == "debian" && "$HAS_DISPLAY" == "true" ]]; then
     info "Applying macOS keybindings for Ubuntu..."
     "$DOTFILES_DIR/scripts/remap-keys.sh"
 fi
