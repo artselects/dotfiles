@@ -1,11 +1,12 @@
 # ── Dotfiles .zshrc ──────────────────────────────────────────────
 
-# ── Prompt ──
-precmd() { printf '%s\n' "${(l:COLUMNS::-:)}" }
-PROMPT='%F{blue}%~%f %F{green}$%f '
-
 # ── Early local overrides (env setup, PATH, etc.) ──
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# ── Prompt (after local overrides to ensure it takes precedence) ──
+precmd() { printf '%s\n' "${(l:COLUMNS::-:)}" }
+PROMPT='%F{blue}%~%f %F{green}$%f '
+RPROMPT=
 
 # ── History ──
 HISTFILE=~/.zsh_history
