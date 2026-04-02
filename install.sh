@@ -165,10 +165,11 @@ ok "Configs symlinked"
 ZSH_PATH="$(command -v zsh)"
 if [[ "$SHELL" != "$ZSH_PATH" ]]; then
     info "Setting default shell to zsh..."
-    if chsh -s "$ZSH_PATH" 2>/dev/null; then
+    if sudo chsh -s "$ZSH_PATH" "$(whoami)" 2>/dev/null; then
         ok "Default shell set to zsh"
     else
-        err "Could not change shell automatically. Run: chsh -s $ZSH_PATH"
+        info "Automatic chsh failed. Please run manually: chsh -s $ZSH_PATH"
+        info "For now, you can start zsh with: exec zsh"
     fi
 else
     ok "Shell is already zsh"
