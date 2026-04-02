@@ -234,6 +234,12 @@ else
     ok "Shell is already zsh"
 fi
 
+# ── Apply Ubuntu-specific macOS keybindings ──
+if [[ "$OS" == "debian" ]]; then
+    info "Applying macOS keybindings for Ubuntu..."
+    "$DOTFILES_DIR/scripts/remap-keys.sh"
+fi
+
 # ── Done ──
 echo ""
 echo -e "${GREEN}${BOLD}Setup complete!${NC}"

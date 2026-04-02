@@ -102,4 +102,7 @@ shape = "Block"
 blinking = "On"
 
 [keyboard]
-bindings = []
+bindings = [
+    { key = "C", mods = "Super", action = "Copy" },
+    { key = "V", mods = "Super", action = "Paste" }
+]
