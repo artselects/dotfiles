@@ -3,6 +3,11 @@
 # ── Early local overrides (env setup, PATH, etc.) ──
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
 
+# ── Auto-attach tmux on SSH sessions ──
+if [[ -n "$SSH_CLIENT" ]] && command -v tmux &>/dev/null && [[ -z "$TMUX" ]]; then
+    tmux attach -t default 2>/dev/null || tmux new -s default
+fi
+
 # ── Prompt (after local overrides to ensure it takes precedence) ──
 precmd() { printf '%s\n' "${(l:COLUMNS::-:)}" }
 PROMPT='%F{blue}%~%f %F{green}$%f '
