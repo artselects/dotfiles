@@ -5,7 +5,7 @@ Cross-platform terminal setup: Ubuntu/Debian, Amazon Linux/RHEL/Fedora, macOS.
 ## What's included
 
 - **zsh** with autosuggestions, syntax highlighting, and completions
-- **tmux** with Catppuccin-inspired theme, sensible defaults
+- **tmux** with smart session manager (`t-session`), mouse toggle (`Prefix + m`), and Catppuccin-inspired theme
 - **Alacritty** config (GPU-accelerated terminal)
 - **Ghostty** config (GPU-accelerated terminal)
 - **JetBrainsMono Nerd Font**
@@ -30,7 +30,8 @@ dotfiles/
 ├── alacritty/alacritty.toml
 ├── ghostty/config
 ├── keyd/default.conf       # macOS-like key remapping (Linux)
-├── scripts/remap-keys.sh   # keyd install helper
+├── scripts/tmux-session.sh   # Smart session manager (t-session)
+├── scripts/remap-keys.sh     # keyd install helper
 └── .gitignore
 ```
 

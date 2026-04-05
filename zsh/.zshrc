@@ -5,7 +5,14 @@
 
 # ── Auto-attach tmux on SSH sessions ──
 if [[ -n "$SSH_CLIENT" ]] && command -v tmux &>/dev/null && [[ -z "$TMUX" ]]; then
-    tmux attach -t default 2>/dev/null || tmux new -s default
+    # Welcome message
+    echo "🚀 Connected via SSH. Quick tmux commands:"
+    echo "  t           - Attach to last session (or 'default')"
+    echo "  tdev        - Open 'dev' session"
+    echo "  tls         - List all sessions"
+    echo ""
+    # Auto-attach to last session
+    tmux attach 2>/dev/null || t-session default
 fi
 
 # ── Prompt (after local overrides to ensure it takes precedence) ──
@@ -86,6 +93,14 @@ alias gl='git log --oneline --graph --decorate -20'
 alias gc='git commit'
 alias gp='git push'
 alias gpl='git pull'
+
+# ── Tmux Aliases ──
+alias t='t-session'
+alias tls='tmux list-sessions'
+alias ta='tmux attach'
+alias td='tmux detach'
+alias tdev='t-session dev'
+alias tmain='t-session main'
 
 # ── fzf ──
 if command -v fzf &>/dev/null; then

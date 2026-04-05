@@ -288,6 +288,9 @@ symlink() {
 
 symlink "$DOTFILES_DIR/zsh/.zshrc"                "$HOME/.zshrc"
 symlink "$DOTFILES_DIR/tmux/tmux.conf"             "$HOME/.tmux.conf"
+chmod +x "$DOTFILES_DIR/scripts/tmux-session.sh"
+mkdir -p "$HOME/.local/bin"
+symlink "$DOTFILES_DIR/scripts/tmux-session.sh"   "$HOME/.local/bin/t-session"
 if [[ "$HAS_DISPLAY" == "true" ]]; then
     symlink "$DOTFILES_DIR/alacritty/alacritty.toml"   "$HOME/.config/alacritty/alacritty.toml"
     symlink "$DOTFILES_DIR/ghostty/config"             "$HOME/.config/ghostty/config"
